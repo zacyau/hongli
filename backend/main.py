@@ -1,11 +1,10 @@
 """
 中证红利 vs 国证A股 对比分析 API
-数据源: 腾讯财经 API
+数据源: 新浪财经 CN_MarketData.getKLineData
 - 中证红利 515180 (sh.515180)
 - 国证A股 399317 (sz.399317)
 """
 
-import os
 import math
 import json
 from datetime import datetime, timedelta
@@ -15,67 +14,46 @@ import numpy as np
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 # ============ 指数配置 ============
 INDEX_CONFIGS = {
     "hongli": {
-        "code": "sh515180",
+        "symbol": "sh515180",
         "name": "中证红利",
-        "name_full": "中证红利全收益",
     },
     "guozheng": {
-        "code": "sz399317",
+        "symbol": "sz399317",
         "name": "国证A股",
-        "name_full": "中证A股全收益",
     },
 }
 
-# ============ API 请求 ============
+# ============ 新浪 API ==========
 
-def fetch_kline(code: str, start_date: str, end_date: str) -> pd.DataFrame:
+def fetch_kline_sina(symbol: str, datalen: int = 2500) -> pd.DataFrame:
     """
-    从腾讯财经获取K线数据（前复权）
+    从新浪财经获取K线数据（240分钟=日K）
+    返回不复权数据
     """
     url = (
-        f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
-        f"?_var=kline_dayqfq&param={code},day,{start_date},{end_date},1500,qfq"
+        f"https://money.finance.sina.com.cn/quotes_service/api/json_v2.php"
+        f"/CN_MarketData.getKLineData?symbol={symbol}&scale=240&ma=5&datalen={datalen}"
     )
-
-    resp = requests.get(url, timeout=10)
+    resp = requests.get(url, timeout=15)
     resp.raise_for_status()
-    text = resp.text
-    # 去掉变量名前缀 "kline_dayqfq="
-    if text.startswith("kline_dayqfq="):
-        text = text[len("kline_dayqfq="):]
-    data = json.loads(text)
+    data = resp.json()
 
-    if data.get("code") != 0:
-        raise HTTPException(status_code=500, detail=f"获取数据失败: {data}")
-
-    code_key = data["data"].keys().__iter__().__next__()
-    qfqdata = data["data"][code_key]
-
-    # 取日K线数据
-    if "qfqday" in qfqdata:
-        klines = qfqdata["qfqday"]
-    elif "day" in qfqdata:
-        klines = qfqdata["day"]
-    else:
-        raise HTTPException(status_code=500, detail=f"无K线数据: {data}")
+    if not data:
+        raise HTTPException(status_code=500, detail=f"获取 {symbol} 数据失败")
 
     records = []
-    for line in klines:
-        # [date, open, close, high, low, volume]
-        if len(line) < 6:
-            continue
+    for line in data:
         records.append({
-            "date": line[0],
-            "open": float(line[1]),
-            "close": float(line[2]),
-            "high": float(line[3]),
-            "low": float(line[4]),
-            "volume": float(line[5]),
+            "date": line["day"],
+            "open": float(line["open"]),
+            "close": float(line["close"]),
+            "high": float(line["high"]),
+            "low": float(line["low"]),
+            "volume": float(line["volume"]),
         })
 
     df = pd.DataFrame(records)
@@ -85,21 +63,21 @@ def fetch_kline(code: str, start_date: str, end_date: str) -> pd.DataFrame:
     # 日收益率
     df["return"] = df["close"].pct_change().fillna(0)
 
-    # 全收益指数（假设股息再投）
+    # 全收益指数（模拟股息再投）
     df["total_return"] = (1 + df["return"]).cumprod() * 1000
 
     return df
 
 
-# ============ 数据计算 ============
+# ============ 数据计算 ==========
 
 def get_all_data() -> dict:
     end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=1500)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
 
     dfs = {}
     for key, config in INDEX_CONFIGS.items():
-        df = fetch_kline(config["code"], start_date, end_date)
+        df = fetch_kline_sina(config["symbol"])
         if df.empty:
             raise HTTPException(status_code=500, detail=f"获取 {config['name']} 数据失败")
         dfs[key] = df
@@ -197,7 +175,7 @@ def get_all_data() -> dict:
 # ============ FastAPI App ============
 app = FastAPI(
     title="中证红利对比分析 API",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 app.add_middleware(
