@@ -18,20 +18,114 @@
 
       <!-- 图表2: 布林线 -->
       <div class="chart-card">
-        <h3>中证红利/国证A股 242日布林线(±2σ)</h3>
+        <div class="chart-header">
+          <h3>中证红利/国证A股 242日布林线(±2σ)</h3>
+          <button class="info-btn" @click="showModal2 = true">
+            <span>说明</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+          </button>
+        </div>
         <div ref="chart2Ref" class="chart"></div>
       </div>
 
       <!-- 图表3: 收益差 -->
       <div class="chart-card">
-        <h3>40日收益差：中证红利 - 国证A股 (MA242)</h3>
+        <div class="chart-header">
+          <h3>40日收益差：中证红利 - 国证A股 (MA242)</h3>
+          <button class="info-btn" @click="showModal3 = true">
+            <span>说明</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+          </button>
+        </div>
         <div ref="chart3Ref" class="chart"></div>
       </div>
 
       <!-- 图表4: RSI -->
       <div class="chart-card">
-        <h3>中证红利/国证A股 RSI14(MA242)</h3>
+        <div class="chart-header">
+          <h3>中证红利/国证A股 RSI14(MA242)</h3>
+          <button class="info-btn" @click="showModal4 = true">
+            <span>说明</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+          </button>
+        </div>
         <div ref="chart4Ref" class="chart"></div>
+      </div>
+    </div>
+
+    <!-- 图表2 说明弹窗 -->
+    <div v-if="showModal2" class="modal-overlay" @click.self="showModal2 = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>布林线说明</h3>
+          <button class="modal-close" @click="showModal2 = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>计算：</h4>
+          <ul>
+            <li>比值 = 中证红利全收益 / 国证A股全收益</li>
+            <li>中轨 = 比值的242日简单移动平均（MA242）</li>
+            <li>上轨 = 中轨 + 2×标准差</li>
+            <li>下轨 = 中轨 - 2×标准差</li>
+            <li>%B = (当前比值 - 下轨) / (上轨 - 下轨)</li>
+            <li>带宽 = (上轨 - 下轨) / 中轨 × 100%</li>
+          </ul>
+          <h4>作用：</h4>
+          <p>判断红利/国证比值处于历史波动区间的什么位置。%B靠近0说明比值接近下轨（红利相对偏弱），靠近1说明比值接近上轨（红利相对偏强）。带宽变宽说明波动加大。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表3 说明弹窗 -->
+    <div v-if="showModal3" class="modal-overlay" @click.self="showModal3 = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>收益差说明</h3>
+          <button class="modal-close" @click="showModal3 = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>计算：</h4>
+          <ul>
+            <li>40日收益差 = 中证红利40日累计收益率 - 国证A股40日累计收益率</li>
+            <li>再叠加一条242日均线（MA242）</li>
+          </ul>
+          <h4>作用：</h4>
+          <p>衡量短期（40日）内红利指数相对国证A股的超额收益方向和幅度。差值为正说明红利短期跑赢，反之跑输。均线方向反映中期趋势。</p>
+          <p>过高的时候不要追高，可以静待回落到零轴甚至此前常见的低点时杀入。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表4 说明弹窗 -->
+    <div v-if="showModal4" class="modal-overlay" @click.self="showModal4 = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>RSI说明</h3>
+          <button class="modal-close" @click="showModal4 = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>计算：</h4>
+          <ul>
+            <li>先算出比值（中证红利/国证A股）</li>
+            <li>RSI(14) = 100 - 100/(1+RS)</li>
+            <li>RS = 14日内上涨幅度均值 / 14日内下跌幅度均值（绝对值）</li>
+            <li>同样叠加242日均线</li>
+          </ul>
+          <h4>作用：</h4>
+          <p>RSI反映比值的动能强弱。RSI&gt;70说明比值处于强势上涨区间（红利相对强势），RSI&lt;30说明比值弱势（红利相对跑输）。和图2结合可以看价格位置+动能方向。</p>
+        </div>
       </div>
     </div>
   </div>
@@ -47,6 +141,10 @@ const chart1Ref = ref(null)
 const chart2Ref = ref(null)
 const chart3Ref = ref(null)
 const chart4Ref = ref(null)
+
+const showModal2 = ref(false)
+const showModal3 = ref(false)
+const showModal4 = ref(false)
 
 const BLUE = '#1a3a6b'
 const RED = '#e63946'
@@ -280,5 +378,119 @@ onMounted(() => {
 .chart {
   width: 100%;
   height: 320px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chart-header h3 {
+  margin-bottom: 0;
+}
+
+.info-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.info-btn:hover {
+  color: #1a3a6b;
+  background: rgba(26, 58, 107, 0.08);
+}
+
+.info-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 10px;
+  max-width: 540px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px 20px 20px;
+}
+
+.modal-body h4 {
+  font-size: 14px;
+  color: #1a3a6b;
+  margin: 12px 0 6px;
+}
+
+.modal-body ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.modal-body li {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.7;
+}
+
+.modal-body p {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.7;
+  margin: 6px 0;
 }
 </style>
